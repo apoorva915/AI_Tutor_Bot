@@ -38,23 +38,39 @@ python -m http.server 5500
 ```
 Visit http://localhost:5500 in your browser (the frontend already points to http://localhost:8000 for the API by default).
 
-### 4. RAG Pipeline Overview
-1. **Upload** – PDF text is extracted with PyMuPDF and chunked with overlap.
-2. **Embeddings** – SentenceTransformer (`all-MiniLM-L6-v2`) creates vectors for each chunk once. The embeddings are stored inside `data/embeddings/<topic>_chunks.json`.
-3. **Index** – Saved embeddings are reloaded into a FAISS L2 index on demand, so `/chat` never recomputes vectors.
-4. **Retrieval** – Each question is embedded, top‑k (default 4) chunks are retrieved, and the associated textbook pages are recorded as sources.
-5. **Generation** – The retrieved snippets and question are sent to Gemini (with retry + safety handling) to produce a grounded answer.
+### 4. RAG Pipeline Explained
+| Stage | Code Path | What Happens |
+|-------|-----------|--------------|
+| **A. Upload** | `backend/app/main.py` → `upload_pdf` | PDF saved to `uploads/`, pages parsed with PyMuPDF (`extract_text_from_pdf`). |
+| **B. Chunking** | `app/utils.py` → `create_text_chunks` | Each page is split into ~500-char overlapping chunks (with `page` metadata). |
+| **C. Embeddings** | `app/rag.py` → `create_embeddings(..., regenerate=True)` | SentenceTransformer (`all-MiniLM-L6-v2`) encodes every chunk once; the vector is stored in each chunk dict. |
+| **D. Persistence** | `app/utils.py` → `save_embeddings` | Chunks + embeddings and image metadata are written to `data/embeddings/<topic>_{chunks,images}.json`. |
+| **E. Retrieval Prep** | `/chat` reloads chunks, rebuilds a FAISS L2 index from persisted vectors (no re-encoding). |
+| **F. Question Answering** | `rag_pipeline.retrieve_chunks` + `generate_answer` | User query is embedded, top‑k chunks retrieved, context + question are sent to Gemini with retry/backoff and safety handling. |
+| **G. Sources** | `main.py` | Answer references the unique page numbers from the retrieved chunks so the frontend can display “Sources: Page x”. |
 
-### 5. Image Retrieval Logic
-- Metadata for 6 diagrams lives in `images_metadata.json` (id, title, keywords, description).
-- Each upload run embeds the description/keyword text once.
-- When an answer is produced, the `image_retriever` combines cosine similarity (60%) and keyword/title matches (40%) to pick the most relevant diagram.
-- The frontend requests `/images/file/<filename>` to render the chosen image inline with the answer and cites the supporting pages.
+This setup satisfies the assignment requirement to store embeddings locally (JSON + FAISS rebuild) while keeping chats fast after the initial upload.
 
-### 6. Prompt Used
+### 5. Image Retrieval Logic (Detailed)
+1. **Metadata** – `images_metadata.json` lists each diagram (`id`, filename, title, keywords, description).
+2. **Embedding creation** – On upload (or chat reload), `image_retriever.load_image_metadata` encodes the concatenated `description + keywords + title` text via SentenceTransformer.
+3. **Similarity scoring** – Every answer/question pair is embedded and compared against each diagram using cosine similarity.
+4. **Keyword boost** – The retriever also scans the question/answer text for keyword and title matches (with stemming and fuzzy matching). Scores are normalized.
+5. **Final ranking** – The final score = `0.6 * embedding_similarity + 0.4 * keyword_score`. The diagram with the highest score is returned to the API.
+6. **Delivery** – The frontend calls `/images/file/<filename>` to display the chosen image with a caption, ensuring each textual response gets a relevant visual.
+
+### 6. Prompt Used (Full Text)
 ```
-You are an AI tutor helping students understand educational content.
-...
+You are an AI tutor helping students understand educational content. 
+Your role is to provide clear, accurate, and helpful explanations based on the provided textbook context.
+
+Based on the following context from the textbook, please answer the student's question:
+
+CONTEXT FROM TEXTBOOK:
+{context}
+
+STUDENT'S QUESTION: {question}
+
 Please provide a helpful answer that:
 1. Directly addresses the question using information from the context
 2. Is educational and easy to understand
@@ -62,7 +78,11 @@ Please provide a helpful answer that:
 4. Is structured clearly
 5. Does not mention that you are using retrieved context
 6. Stays focused on the educational content
+
+Answer:
 ```
+
+This is the exact prompt that `rag_pipeline.generate_answer` uses for every Gemini call.
 
 ### 7. Demo Flow
 1. Upload `Sound.pdf` (or any chapter) via the UI.
