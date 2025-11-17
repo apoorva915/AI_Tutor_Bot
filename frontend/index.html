@@ -4,31 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Tutor - RAG Chatbot</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>AI Tutor Chatbot</h1>
-            <p>Upload a PDF chapter and ask questions about it</p>
-        </header>
-
-        <div class="upload-section">
-            <h3>Upload PDF Chapter</h3>
-            <input type="file" id="pdfUpload" accept=".pdf">
-            <button onclick="uploadPDF()">Process PDF</button>
-            <div id="uploadStatus"></div>
-        </div>
-
-        <div class="chat-section" id="chatSection" style="display: none;">
-            <div class="chat-container">
-                <div id="chatMessages" class="chat-messages"></div>
-                <div class="chat-input">
-                    <input type="text" id="userInput" placeholder="Ask a question about the chapter..." onkeypress="handleKeyPress(event)">
-                    <button onclick="sendMessage()">Send</button>
+<body class="light-theme">
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-pulse">
+                    <span></span><span></span><span></span>
+                </div>
+                <div>
+                    <h1>AI Tutor Chatbot</h1>
+                    <p>Your contextual tutor with curated visuals</p>
                 </div>
             </div>
-        </div>
+            <div class="header-actions">
+                <div class="status-badge" id="systemStatus">Idle</div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="sun">☀️</span>
+                    <span class="moon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="info-cards">
+            <article class="info-card">
+                <h4>1. Upload Chapter</h4>
+                <p>We convert the PDF into overlapping chunks ready for retrieval.</p>
+            </article>
+            <article class="info-card">
+                <h4>2. Ask Questions</h4>
+                <p>The tutor grounds every response using the chapter excerpts.</p>
+            </article>
+            <article class="info-card">
+                <h4>3. See Visuals</h4>
+                <p>Relevant diagrams accompany the explanation to reinforce learning.</p>
+            </article>
+        </section>
+
+        <section class="upload-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Upload PDF Chapter</h3>
+                    <p>Supported format: .pdf. Large files may take a minute.</p>
+                </div>
+                <div class="topic-pill" id="topicPill">No topic loaded</div>
+            </div>
+            <div class="upload-controls">
+                <label class="file-input">
+                    <input type="file" id="pdfUpload" accept=".pdf">
+                    <span>Select PDF</span>
+                </label>
+                <button class="primary-btn" onclick="uploadPDF()">Process PDF</button>
+            </div>
+            <div id="uploadStatus" class="upload-status"></div>
+        </section>
+
+        <section class="main-grid">
+            <div class="chat-section" id="chatSection" style="display: none;">
+                <div class="chat-container glass-card">
+                    <div class="chat-header">
+                        <div>
+                            <h3>Interactive Tutor</h3>
+                            <p>Ask anything related to the processed chapter.</p>
+                        </div>
+                        <div class="source-counter" id="sourceCounter">0 sources referenced</div>
+                    </div>
+                    <div id="chatMessages" class="chat-messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="userInput" placeholder="Ask a question about the chapter..." onkeypress="handleKeyPress(event)">
+                        <button class="primary-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="tips-panel glass-card">
+                <h3>Pro Tips</h3>
+                <ul>
+                    <li>Ask focused questions like “Explain refraction in water”.</li>
+                    <li>Follow up with “show formula” or “give example” to dive deeper.</li>
+                    <li>Use the same topic id to resume the conversation later.</li>
+                </ul>
+                <div class="meta-block">
+                    <p class="label">Current Topic Id</p>
+                    <p class="value" id="sidebarTopic">—</p>
+                </div>
+                <div class="meta-block">
+                    <p class="label">Chunks Indexed</p>
+                    <p class="value" id="chunksCount">0</p>
+                </div>
+            </aside>
+        </section>
     </div>
 
     <script src="script.js"></script>

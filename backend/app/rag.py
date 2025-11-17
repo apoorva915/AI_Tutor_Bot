@@ -65,18 +65,32 @@ class RAGPipeline:
         if self.llm_model is None:
             raise RuntimeError("Failed to initialize any Gemini model. Please check your API key and model availability.")
     
-    def create_embeddings(self, chunks: List[Dict]) -> None:
-        """Create embeddings for text chunks and build FAISS index"""
+    def create_embeddings(self, chunks: List[Dict], regenerate: bool = False) -> None:
+        """Ensure chunks have embeddings and build FAISS index without recomputing unnecessarily"""
+        if not chunks:
+            self.chunks = []
+            self.vector_store = None
+            return
+
         self.chunks = chunks
-        
-        # Generate embeddings
-        texts = [chunk["text"] for chunk in chunks]
-        embeddings = self.embedding_model.encode(texts)
-        
-        # Create FAISS index
-        dimension = embeddings.shape[1]
+
+        # Determine if we need to regenerate embeddings (e.g., fresh PDF upload)
+        missing_embeddings = regenerate or any("embeddings" not in chunk for chunk in chunks)
+        if missing_embeddings:
+            texts = [chunk["text"] for chunk in chunks]
+            embeddings = self.embedding_model.encode(texts)
+            for chunk, embedding in zip(chunks, embeddings):
+                # Store as list for JSON serialization
+                chunk["embeddings"] = embedding.astype(float).tolist()
+
+        # Build FAISS index from stored embeddings
+        embeddings_matrix = np.array(
+            [chunk["embeddings"] for chunk in chunks],
+            dtype="float32"
+        )
+        dimension = embeddings_matrix.shape[1]
         self.vector_store = faiss.IndexFlatL2(dimension)
-        self.vector_store.add(embeddings.astype('float32'))
+        self.vector_store.add(embeddings_matrix)
     
     def retrieve_chunks(self, query: str, k: int = 4) -> List[Dict]:
         """Retrieve top-k most relevant chunks"""
