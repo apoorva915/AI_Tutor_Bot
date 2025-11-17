@@ -1,6 +1,6 @@
 ## AI Tutor Bot
 
-A lightweight RAG chatbot that ingests a chapter PDF, answers follow‑up questions with grounded context, and surfaces a relevant diagram with every response.
+A RAG chatbot that ingests a chapter PDF, answers follow‑up questions with grounded context, and surfaces a relevant diagram with every response.
 
 ### 1. Prerequisites
 - Python 3.9+
@@ -51,7 +51,7 @@ Visit http://localhost:5500 in your browser (the frontend already points to http
 
 This setup satisfies the assignment requirement to store embeddings locally (JSON + FAISS rebuild) while keeping chats fast after the initial upload.
 
-### 5. Image Retrieval Logic (Detailed)
+### 5. Image Retrieval Logic 
 1. **Metadata** – `images_metadata.json` lists each diagram (`id`, filename, title, keywords, description).
 2. **Embedding creation** – On upload (or chat reload), `image_retriever.load_image_metadata` encodes the concatenated `description + keywords + title` text via SentenceTransformer.
 3. **Similarity scoring** – Every answer/question pair is embedded and compared against each diagram using cosine similarity.
@@ -59,7 +59,7 @@ This setup satisfies the assignment requirement to store embeddings locally (JSO
 5. **Final ranking** – The final score = `0.6 * embedding_similarity + 0.4 * keyword_score`. The diagram with the highest score is returned to the API.
 6. **Delivery** – The frontend calls `/images/file/<filename>` to display the chosen image with a caption, ensuring each textual response gets a relevant visual.
 
-### 6. Prompt Used (Full Text)
+### 6. Prompt Used 
 ```
 You are an AI tutor helping students understand educational content. 
 Your role is to provide clear, accurate, and helpful explanations based on the provided textbook context.
