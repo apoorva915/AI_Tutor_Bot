@@ -2,6 +2,7 @@
 
 A RAG chatbot that ingests a chapter PDF, answers follow‑up questions with grounded context, and surfaces a relevant diagram with every response.
 
+## Setup
 ### 1. Prerequisites
 - Python 3.9+
 - Node/npm (or any static file server) for the frontend
@@ -38,7 +39,11 @@ python -m http.server 5500
 ```
 Visit http://localhost:5500 in your browser (the frontend already points to http://localhost:8000 for the API by default).
 
-### 4. RAG Pipeline Explained
+## System Explanation
+
+### For detailed step by step system explaination, check SYSTEM_EXPLANATION.md file
+
+### 1. RAG Pipeline Explained
 | Stage | Code Path | What Happens |
 |-------|-----------|--------------|
 | **A. Upload** | `backend/app/main.py` → `upload_pdf` | PDF saved to `uploads/`, pages parsed with PyMuPDF (`extract_text_from_pdf`). |
@@ -51,7 +56,7 @@ Visit http://localhost:5500 in your browser (the frontend already points to http
 
 This setup satisfies the assignment requirement to store embeddings locally (JSON + FAISS rebuild) while keeping chats fast after the initial upload.
 
-### 5. Image Retrieval Logic 
+### 2. Image Retrieval Logic 
 1. **Metadata** – `images_metadata.json` lists each diagram (`id`, filename, title, keywords, description).
 2. **Embedding creation** – On upload (or chat reload), `image_retriever.load_image_metadata` encodes the concatenated `description + keywords + title` text via SentenceTransformer.
 3. **Similarity scoring** – Every answer/question pair is embedded and compared against each diagram using cosine similarity.
@@ -59,7 +64,7 @@ This setup satisfies the assignment requirement to store embeddings locally (JSO
 5. **Final ranking** – The final score = `0.6 * embedding_similarity + 0.4 * keyword_score`. The diagram with the highest score is returned to the API.
 6. **Delivery** – The frontend calls `/images/file/<filename>` to display the chosen image with a caption, ensuring each textual response gets a relevant visual.
 
-### 6. Prompt Used 
+### 3. Prompt Used 
 ```
 You are an AI tutor helping students understand educational content. 
 Your role is to provide clear, accurate, and helpful explanations based on the provided textbook context.
@@ -84,7 +89,7 @@ Answer:
 
 This is the exact prompt that `rag_pipeline.generate_answer` uses for every Gemini call.
 
-### 7. Demo Flow
+## Demo Flow
 1. Upload `Sound.pdf` (or any chapter) via the UI.
 2. Wait for “Ready for questions”; the sidebar shows the topic id + chunk count.
 3. Ask questions; each response should include grounded text, cited pages, and an illustrative image.
