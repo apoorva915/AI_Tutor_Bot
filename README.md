@@ -21,18 +21,22 @@ GEMINI_API_KEY=your_real_key_here
 ```
 The FastAPI app uses `python-dotenv`, so the key is loaded automatically on startup.
 
-Run the API:
+Run the API (two common options):
 ```bash
+# hot reload via uvicorn
 uvicorn app.main:app --reload
+
+# or, if you prefer the helper script
+python run.py
 ```
 
 ### 3. Frontend Setup
-Serve `frontend/` however you like, e.g.
+Open a second terminal window and serve the static files with Python’s built‑in server:
 ```bash
 cd frontend
-npx serve .
+python -m http.server 5500
 ```
-Open the reported URL (default http://localhost:5500) and point it at the backend running on http://localhost:8000.
+Visit http://localhost:5500 in your browser (the frontend already points to http://localhost:8000 for the API by default).
 
 ### 4. RAG Pipeline Overview
 1. **Upload** – PDF text is extracted with PyMuPDF and chunked with overlap.
